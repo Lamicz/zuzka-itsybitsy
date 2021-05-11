@@ -1,0 +1,22 @@
+{
+    "name": "Zuzka ItsyBitsy",
+    "description": "",
+    "dependencies": {
+        "adafruit-itsybitsy-m0-express": "*"
+    },
+    "files": [
+        "main.ts",
+        "README.md"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "targetVersions": {
+        "target": "0.15.6",
+        "targetId": "maker"
+    },
+    "supportedTargets": [
+        "maker"
+    ],
+    "preferredEditor": "tsprj"
+}

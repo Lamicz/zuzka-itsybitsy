@@ -8,9 +8,7 @@
         "main.ts",
         "README.md"
     ],
-    "testFiles": [
-        "test.ts"
-    ],
+    "testFiles": [],
     "targetVersions": {
         "target": "0.15.6",
         "targetId": "maker"

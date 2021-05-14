@@ -11,17 +11,25 @@ let pixelsMode1CurrentPixels: uint8 = 0
 let pixelWaitCyclesMode1: uint8 = 40
 
 const stripLength: uint8 = 20
-const pixelsMiddle = Buffer.fromArray([8, 9, 10, 11]) // counting from 0
-const pixelsMiddleMinBrightness: uint8 = 100
-const pixelsMode0 = Buffer.fromArray([10, 15])
-const pixelsMode0Max: uint8 = 15
-const pixelsMode1 = Buffer.fromArray([4, 8])
-const pixelsMode1Max: uint8 = 8
+const pixelsMiddle: Buffer = Buffer.fromArray([8, 9, 10, 11]) // counting from 0
+const pixelsMiddleMinBrightnessPool: Buffer = Buffer.fromArray([75, 110])
+const pixelsMode0: Buffer = Buffer.fromArray([8, 13])
+const pixelsMode0Max: uint8 = 13
+const pixelMode0MaxBrightness: Buffer = Buffer.fromArray([85, 255])
+const pixelsMode1: Buffer = Buffer.fromArray([1, 6])
+const pixelsMode1Max: uint8 = 6
 const pixelWaitCyclesMode0: uint8 = 4
 const pixelWaitCyclesMode1Pool: Buffer = Buffer.fromArray([20, 50])
-const pixelStepChangeBrightnessMode02 = Buffer.fromArray([4, 8]);
+const pixelStepChangeBrightnessMode02: Buffer = Buffer.fromArray([4, 8]);
 const pixelColor: Buffer = Buffer.fromArray([154, 248, 251]);
 const strip = light.createNeoPixelStrip(pins.D5, stripLength, NeoPixelMode.RGBW)
+
+
+const onboardLed = light.createAPA102Strip(pins.pinByCfg(DAL.CFG_PIN_DOTSTAR_DATA), pins.pinByCfg(DAL.CFG_PIN_DOTSTAR_CLOCK), config.NUM_DOTSTARS)
+onboardLed.setBrightness(85)
+onboardLed.setPixelColor(0, pixel.rgb(255, 0, 0))
+onboardLed.show()
+
 
 class Pixel {
 
@@ -31,7 +39,9 @@ class Pixel {
     position: uint8 = 0;
     wait: uint8 = 0;
     currentBrightness: int16 = 0;
+    currentBrightnessImmutable: uint8 = 0;
     brightnessStep: uint8 = 0;
+    maxBrightness: uint8 = 0;
 
     constructor(mode: number, pos: number = 0) {
 
@@ -42,9 +52,6 @@ class Pixel {
 }
 
 let pixels: Pixel[] = [];
-
-pixel.setBrightness(72)
-pixel.setColor(pixel.colors(PixelColors.Green))
 
 strip.setBuffered(true)
 strip.setBrightness(255)
@@ -96,10 +103,10 @@ function pixelProcess(eggPixel: Pixel) {
 
                 eggPixel.currentBrightness += eggPixel.brightnessStep
 
-                if (eggPixel.currentBrightness >= 255) {
+                if (eggPixel.currentBrightness >= eggPixel.maxBrightness) {
                     eggPixel.timer = 1
                     eggPixel.status = 3
-                    eggPixel.currentBrightness = 255
+                    eggPixel.currentBrightness = eggPixel.maxBrightness
                 }
 
             } else {
@@ -121,7 +128,7 @@ function pixelProcess(eggPixel: Pixel) {
                 pixel.rgb(pixelColor.getUint8(0) * eggPixel.currentBrightness / 255, pixelColor.getUint8(1) * eggPixel.currentBrightness / 255, pixelColor.getUint8(2) * eggPixel.currentBrightness / 255)
             )
 
-            if ((eggPixel.mode == 2) && (eggPixel.status == 2) && (eggPixel.currentBrightness <= pixelsMiddleMinBrightness)) {
+            if ((eggPixel.mode == 2) && (eggPixel.status == 2) && (eggPixel.currentBrightness <= eggPixel.currentBrightnessImmutable)) {
                 eggPixel.currentBrightness = 0
             }
         }
@@ -170,16 +177,15 @@ function pixelProcess(eggPixel: Pixel) {
 }
 
 function pixelCreate(eggPixel: Pixel) {
+
+    isValid = true
+
     if (eggPixel.mode == 0) {
         isValid = pixelsMode0CurrentPixels < pixelsMode0Current
     }
 
     if (eggPixel.mode == 1) {
-        isValid = pixelsMode1CurrentPixels < pixelsMode1Current
-    }
-
-    if (eggPixel.mode == 2) {
-        isValid = true
+        isValid = Math.random() > 0.5 && pixelsMode1CurrentPixels < pixelsMode1Current
     }
 
     if (isValid) {
@@ -192,6 +198,7 @@ function pixelCreate(eggPixel: Pixel) {
             stripFreePositions.removeElement(eggPixel.position);
 
             eggPixel.brightnessStep = Math.randomRange(pixelStepChangeBrightnessMode02.getUint8(0), pixelStepChangeBrightnessMode02.getUint8(1))
+            eggPixel.maxBrightness = Math.randomRange(pixelMode0MaxBrightness.getUint8(0), pixelMode0MaxBrightness.getUint8(1))
         }
 
         if (eggPixel.mode == 1) {
@@ -199,15 +206,18 @@ function pixelCreate(eggPixel: Pixel) {
             pixelsMode1CurrentPixels++
 
             eggPixel.position = Math.randomRange(0, stripLength - 1)
+            
             while (pixelsMiddle.toArray(NumberFormat.UInt8BE).indexOf(eggPixel.position) > -1) {
                 eggPixel.position = Math.randomRange(0, stripLength - 1)
-            }
+            }            
         }
 
         if (eggPixel.mode == 2) {
 
             eggPixel.brightnessStep = Math.randomRange(pixelStepChangeBrightnessMode02.getUint8(0), pixelStepChangeBrightnessMode02.getUint8(1))
-            eggPixel.currentBrightness = pixelsMiddleMinBrightness
+            eggPixel.currentBrightness = Math.randomRange(pixelsMiddleMinBrightnessPool.getUint8(0), pixelsMiddleMinBrightnessPool.getUint8(1))
+            eggPixel.currentBrightnessImmutable = eggPixel.currentBrightness
+            eggPixel.maxBrightness = 255
         }
 
         eggPixel.status = 1

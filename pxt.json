@@ -10,7 +10,7 @@
     ],
     "testFiles": [],
     "targetVersions": {
-        "target": "0.15.6",
+        "target": "0.15.12",
         "targetId": "maker"
     },
     "supportedTargets": [
